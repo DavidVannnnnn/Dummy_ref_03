@@ -12,12 +12,12 @@
 class RGB
 {
 private:
-    uint8_t LED_Data[MAX_LED][4];
-    uint8_t LED_Mod[MAX_LED][4];  // for brightness
-    uint32_t pwmData[(24*MAX_LED)+50];
+    uint8_t LED_Data[MAX_LED][4]{};
+    uint8_t LED_Mod[MAX_LED][4]{};  // for brightness
+    uint32_t pwmData[(24*MAX_LED)+50]{};
     uint16_t  effStep = 0;
 public:
-    uint8_t  data_sentflag = 0;
+    volatile uint8_t data_sentflag = 0;
 
     enum Rgb_style_t
     {
@@ -67,50 +67,6 @@ public:
 
     }
 
-//     void WS2812_Send (void)
-//     {
-//         uint32_t indx=0;
-//         uint32_t color;
-//         HAL_StatusTypeDef ret;
-
-//         for (int i= 0; i<MAX_LED; i++)
-//         {
-// #if USE_BRIGHTNESS
-//             color = ((LED_Mod[i][1]<<16) | (LED_Mod[i][2]<<8) | (LED_Mod[i][3]));
-// #else
-//             color = ((LED_Data[i][1]<<16) | (LED_Data[i][2]<<8) | (LED_Data[i][3]));
-// #endif
-//             for (int i=23; i>=0; i--)
-//             {
-//                 //1 timing
-//                 if (color&(1<<i))
-//                 {
-//                     pwmData[indx] = 70;  // 2/3 of 105
-//                 }
-//                 //0 timing
-//                 else pwmData[indx] = 30;  // 1/3 of 105
-//                 indx++;
-//             }
-
-//         }
-
-//         //for reset between two data cycle
-//         for (int i=0; i<30; i++)
-//         {
-//             pwmData[indx] = 0;
-//             indx++;
-//         }
-
-//         ret = HAL_TIM_PWM_Start_DMA(&htim2, TIM_CHANNEL_4, pwmData, indx);
-//         if (ret != HAL_OK) {
-//             data_sentflag = 0;
-//             return;
-//         }
-//         while (!data_sentflag){};
-//         data_sentflag = 0;
-//     }
-
-
 void WS2812_Send (void)
 {
     uint32_t indx=0;
@@ -140,15 +96,12 @@ void WS2812_Send (void)
         indx++;
     }
 
-    __disable_irq(); //关闭全部中断，防止SysTick打断DMA波形
-    ret = HAL_TIM_PWM_Start_DMA(&htim2, TIM_CHANNEL_4, pwmData, indx);
+    ret = HAL_TIM_PWM_Start_DMA(&htim5, TIM_CHANNEL_4, pwmData, indx);
     if (ret != HAL_OK)
     {
-        __enable_irq();
         return;
     }
     while (!data_sentflag){};
-    __enable_irq(); //DMA传输完成，恢复中断
 
     data_sentflag = 0;
 }
@@ -299,7 +252,7 @@ void WS2812_Send (void)
                 break;
             case ALLOff:
                 r = 0;
-                g = 10;
+                g = 0;
                 b = 0;
                 break;
             default:

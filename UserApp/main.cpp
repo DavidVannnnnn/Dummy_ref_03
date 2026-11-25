@@ -7,7 +7,7 @@ SSD1306 oled(&hi2c0);
 MPU6050 mpu6050(&hi2c1);
 // 5 User-Timers, can choose from htim7/htim10/htim11/htim13/htim14
 Timer timerCtrlLoop(&htim7, 200);
-// 2x2-channel PWMs, used htim9 & htim12, each has 2-channel outputs
+// PWM outputs: PA2 (TIM9_CH1), PB14/PB15 (TIM12_CH1/CH2); PA3 is used by RGB.
 PWM pwm(21000, 21000);
 
 RGB rgb(0);
@@ -146,9 +146,8 @@ void ThreadRGBUpdate(void* argument) {
 
 void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim)
 {
-    if(htim->Instance==TIM2)
+    if(htim->Instance==TIM5)
     {
-        HAL_TIM_PWM_Stop_DMA(&htim2, TIM_CHANNEL_4);
         rgb.Interrupt(1);
     }
 }
@@ -156,11 +155,23 @@ void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim)
 /* Default Entry -------------------------------------------------------*/
 void Main(void)
 {
+    // Power-on RGB self-test: light the ring before communication or IMU init.
+    dummy.SetRGBMode(RGB::RAINBOW);
+    dummy.SetRGBEnable(true);
+    rgb.Run(RGB::RAINBOW);
+
+    const osThreadAttr_t rgbTask_attributes = {
+            .name = "RGBTask",
+            .stack_size = 2000,
+            .priority = (osPriority_t) osPriorityNormal,
+    };
+    rgbTaskHandle = osThreadNew(ThreadRGBUpdate, nullptr, &rgbTask_attributes);
+
     // Init all communication staff, including USB-CDC/VCP/UART/CAN etc.
     InitCommunication();
 
     // Init Robot.
-     dummy.Init();
+    dummy.Init();
 
     // Init IMU.
     do
@@ -197,13 +208,6 @@ void Main(void)
         .priority = (osPriority_t) osPriorityNormal,   // should >= Normal
     };
     oledTaskHandle = osThreadNew(ThreadOledUpdate, nullptr, &oledTask_attributes);
-
-    const osThreadAttr_t rgbTask_attributes = {
-            .name = "RGBTask",
-            .stack_size = 2000,
-            .priority = (osPriority_t) osPriorityNormal,   // should >= Normal
-    };
-    rgbTaskHandle = osThreadNew(ThreadRGBUpdate, nullptr, &rgbTask_attributes);
 
     // Start Timer Callbacks.
     timerCtrlLoop.SetCallback(OnTimer7Callback);

@@ -30,6 +30,10 @@ void RGB::Run(RGB::Rgb_style_t mode) {
             PureColor(ALLBlue);
             break;
         }
+        case ALLOff:{
+            PureColor(ALLOff);
+            break;
+        }
         default:
             break;
     }
