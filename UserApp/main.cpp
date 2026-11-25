@@ -155,18 +155,6 @@ void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim)
 /* Default Entry -------------------------------------------------------*/
 void Main(void)
 {
-    // Power-on RGB self-test: light the ring before communication or IMU init.
-    dummy.SetRGBMode(RGB::RAINBOW);
-    dummy.SetRGBEnable(true);
-    rgb.Run(RGB::RAINBOW);
-
-    const osThreadAttr_t rgbTask_attributes = {
-            .name = "RGBTask",
-            .stack_size = 2000,
-            .priority = (osPriority_t) osPriorityNormal,
-    };
-    rgbTaskHandle = osThreadNew(ThreadRGBUpdate, nullptr, &rgbTask_attributes);
-
     // Init all communication staff, including USB-CDC/VCP/UART/CAN etc.
     InitCommunication();
 
@@ -208,6 +196,18 @@ void Main(void)
         .priority = (osPriority_t) osPriorityNormal,   // should >= Normal
     };
     oledTaskHandle = osThreadNew(ThreadOledUpdate, nullptr, &oledTask_attributes);
+
+    // RGB starts only after communication, IMU and OLED initialization succeed.
+    dummy.SetRGBMode(RGB::RAINBOW);
+    dummy.SetRGBEnable(true);
+    rgb.Run(RGB::RAINBOW);
+
+    const osThreadAttr_t rgbTask_attributes = {
+            .name = "RGBTask",
+            .stack_size = 2000,
+            .priority = (osPriority_t) osPriorityNormal,
+    };
+    rgbTaskHandle = osThreadNew(ThreadRGBUpdate, nullptr, &rgbTask_attributes);
 
     // Start Timer Callbacks.
     timerCtrlLoop.SetCallback(OnTimer7Callback);
