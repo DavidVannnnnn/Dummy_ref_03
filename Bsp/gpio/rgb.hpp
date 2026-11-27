@@ -7,6 +7,7 @@
 
 #define MAX_LED 12
 #define USE_BRIGHTNESS 0
+#define WS2812_RESET_SLOTS 240
 #define PI               3.14159265358979f
 
 class RGB
@@ -14,7 +15,7 @@ class RGB
 private:
     uint8_t LED_Data[MAX_LED][4]{};
     uint8_t LED_Mod[MAX_LED][4]{};  // for brightness
-    uint32_t pwmData[(24*MAX_LED)+50]{};
+    uint32_t pwmData[(24*MAX_LED)+WS2812_RESET_SLOTS]{};
     uint16_t  effStep = 0;
 public:
     volatile uint8_t data_sentflag = 0;
@@ -90,7 +91,7 @@ void WS2812_Send (void)
         }
     }
     // 复位码填充
-    for (int i=0; i<30; i++)
+    for (int i=0; i<WS2812_RESET_SLOTS; i++)
     {
         pwmData[indx] = 0;
         indx++;
@@ -260,8 +261,8 @@ void WS2812_Send (void)
         }
         for(uint16_t j=0;j<MAX_LED;j++) {
             Set_LED(j, r, g, b);
-            WS2812_Send();
         }
+        WS2812_Send();
     }
 
 };
